@@ -1,4 +1,7 @@
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
@@ -7,11 +10,11 @@ public class Main {
         for (int i = 0; i < texts.length; i++) {
             texts[i] = generateText("aab", 30_000);
         }
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
 
         long startTs = System.currentTimeMillis(); // start time
-        List<Thread> threads = new ArrayList<>();
         for (String text : texts) {
-            threads.add(new Thread(() -> {
+            executorService.submit(() -> {
                 int maxSize = 0;
                 for (int i = 0; i < text.length(); i++) {
                     for (int j = 0; j < text.length(); j++) {
@@ -30,14 +33,12 @@ public class Main {
                         }
                     }
                 }
-                System.out.println(text.substring(0, 100) + " -> " + maxSize);
-            }));
+                System.out.println(text.substring(0, 100) + " -> " + maxSize + Thread.currentThread().getName());
+            });
         }
+        executorService.shutdown();
+        executorService.awaitTermination(2, TimeUnit.MINUTES);
 
-        threads.forEach(Thread::start);
-        for (Thread thread : threads) {
-            thread.join();
-        }
         long endTs = System.currentTimeMillis(); // end time
 
         System.out.println("Time: " + (endTs - startTs) + "ms");
