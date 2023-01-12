@@ -1,7 +1,5 @@
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class Main {
 
@@ -10,11 +8,12 @@ public class Main {
         for (int i = 0; i < texts.length; i++) {
             texts[i] = generateText("aab", 30_000);
         }
-        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
 
-        long startTs = System.currentTimeMillis(); // start time
+        long startTs = System.currentTimeMillis();// start time
+        List<Future<Integer>> future = new ArrayList<>();
         for (String text : texts) {
-            executorService.submit(() -> {
+            future.add(executorService.submit(() -> {
                 int maxSize = 0;
                 for (int i = 0; i < text.length(); i++) {
                     for (int j = 0; j < text.length(); j++) {
@@ -33,11 +32,12 @@ public class Main {
                         }
                     }
                 }
-                System.out.println(text.substring(0, 100) + " -> " + maxSize + Thread.currentThread().getName());
-            });
+                System.out.println(text.substring(0, 100) + " -> " + maxSize);
+                return maxSize;
+            }));
         }
+        max(future);
         executorService.shutdown();
-        executorService.awaitTermination(2, TimeUnit.MINUTES);
 
         long endTs = System.currentTimeMillis(); // end time
 
@@ -51,6 +51,18 @@ public class Main {
             text.append(letters.charAt(random.nextInt(letters.length())));
         }
         return text.toString();
+    }
+    public static void max(List<Future<Integer>> list) {
+        List<Integer> resultList = new ArrayList<>();
+        for (Future<Integer> future: list) {
+            try {
+                resultList.add(future.get());
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        System.out.println("Максимальный интервал = " + resultList.stream().max((o1, o2) -> o1 - o2).get());
     }
 
 }
